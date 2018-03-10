@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <title>My WebSocket</title>
+    <script type="text/javascript" src="js/jquery.min.js"></script>
+</head>
+<script type="text/javascript" th:inline="javascript">
+    window.onload = function () {
+        var body = document.body;
+        var span = document.createElement("span");
+        var br = document.createElement("br");
+        span.setAttribute("id", "sender");
+        span.innerText = "Welcome " + name;
+        body.appendChild(span);
+        body.appendChild(br);
+        if (role == "common") {
+            body = document.body;
+            clientFace(body, null);
+        } else if (role == "professor") {
+            $.ajax({
+                url: "/getLeaveWord",
+                type: "POST",
+                data: {
+                    "receiver_id": user_id,
+                },
+                async: false,
+                success: function (result) {
+                    if (result != null) {
+                        $.each(result, function (i, msg) {
+                            var strArray = msg.split(';');
+                            newChat(msg, strArray);
+                        });
+                    }
+                }
+            });
+        }
+    }
+</script>
+<style>
+    #list {
+        position: absolute;
+        left: 50%;
+        top: 40%;
+        width: 200px;
+        height: 300px;
+        margin-top: -80px;
+        margin-left: -100px;
+        border: 1px solid black;
+        z-index: 1000;
+        background: white;
+    }
+</style>
+<body>
+</body>
+
+<script type="text/javascript" th:inline="javascript">
+    var websocket = null;
+    var chatSet = new Set();
+    var user_id = [[${account.user_id}]];
+    var name = [[${account.name}]];
+    var role = [[${account.role}]];
+    var privateChatObj = null;
+    //判断非专家用户的专属专家
+    if (privateChatObj == null && role == "common") {
+        $.ajax({
+            url: "/getPrivateChatObj",
+            type: "POST",
+            data: {
+                "user_id": user_id,
+            },
+            async: false,
+            success: function (result) {
+                privateChatObj = result;
+            }
+        });
+    }
+    //判断当前浏览器是否支持WebSocket
+    if ('WebSocket' in window) {
+        websocket = new WebSocket("ws://localhost:8080/websocket/" + user_id);
+    }
+    else {
+        alert('Not support websocket')
+    }
+    //连接发生错误的回调方法
+    websocket.onerror = function () {
+        //setMessageInnerHTML("error");
+    };
+    //连接成功建立的回调方法
+    websocket.onopen = function (event) {
+        //setMessageInnerHTML("open");
+        // if (signal != null)
+        //     websocket.send(JSON.stringify(signal));
+    }
+    //接收到消息的回调方法
+    websocket.onmessage = function (event) {
+        var data = event.data;
+        var strArray = data.split(';');
+        if (role == "professor") {
+            if (strArray[0] == "system")
+                newChat(data, strArray);
+            else {
+                var realData = data.substring(strArray[0].length + 1, data.length - strArray[strArray.length - 1].length - 1);
+                var to = strArray[strArray.length - 1];
+                setMessageInnerHTML(realData, to);
+            }
+        } else if (role == "common") {
+            if (strArray[0] == "system") {
+                if (strArray[strArray.length - 1] == "cancel")
+                    data = data.substring(7, data.length - 7);
+                else
+                    data = data.substring(7, data.length - 8);
+                document.getElementById("to").innerHTML = data;
+                document.getElementById("mode").innerHTML = "群聊";
+            } else if (strArray[0] == "personal") {
+                data = data.substring(9, data.length);
+                setMessageInnerHTML(data, null);
+            }
+            else if (strArray[0] == "groupChat") {
+                data = data.substring(10, data.length - strArray[strArray.length - 1].length - 1);
+                setMessageInnerHTML(data, null);
+            }
+        }
+    }
+    //连接关闭的回调方法
+    websocket.onclose = function () {
+        //setMessageInnerHTML("close");
+    }
+    //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。
+    window.onbeforeunload = function () {
+        websocket.close();
+    }
+
+    //将消息显示在网页上
+    function setMessageInnerHTML(innerHTML, to) {
+        if (role == "professor") {
+            document.getElementById(to).children[6].innerHTML += innerHTML + '<br/>';
+        } else {
+            document.getElementById('message').innerHTML += innerHTML + '<br/>';
+        }
+    }
+
+    //关闭连接
+    function closeWebSocket() {
+        websocket.close();
+    }
+
+    //专家收到消息出现弹框
+    function newChat(data, strArray) {
+        var length = data.length;
+        var strLength = strArray.length;
+        if (strArray[strLength - 1] == "rebuild") {
+            professorFace(strArray[strLength - 2]);
+            //chatSet.add(strArray[strLength - 2]);
+            exitGUI(document.getElementById(strArray[strLength - 2]));
+            document.getElementById(strArray[strLength - 2]).children[4].innerHTML = data.substring(7, length - 8);
+            document.getElementById(strArray[strLength - 2]).children[5].innerHTML = "群聊";
+        } else if (strArray[strLength - 1] == "change") {
+            document.getElementById(strArray[strLength - 2]).children[5].innerHTML = "群聊";
+        } else if (strArray[strLength - 1] == "build") {
+            var div = document.getElementById(strArray[strLength - 2]);
+            if (div == null)
+                professorFace(strArray[strLength - 2]);
+            //chatSet.add(strArray[strLength - 2]);
+            data = data.substring(7, length - 6);
+            strArray = data.split(';');
+            var realData = data.substring(0, data.length - strArray[strArray.length - 1].length - 1);
+            var to = strArray[strArray.length - 1];
+            setMessageInnerHTML(realData, to);
+        }
+        else if (strArray[strLength - 1] == "cancel") {
+            alert(data + " " + strArray.length);
+            document.getElementById(strArray[strLength - 2]).children[4].innerHTML = data.substring(7, data.length - strArray[strArray.length - 1].length - 1);
+        }
+    }
+
+    //专家用户界面
+    function professorFace(user_id) {
+        var body = document.body;
+        var div = document.createElement("div");
+        div.setAttribute("id", user_id);
+        div.style.backgroundColor = "red";
+        body.appendChild(div);
+        clientFace(div, user_id);
+    }
+
+    //非专家用户界面
+    function clientFace(body, user_id) {
+
+        var button3 = null;
+
+        var text = document.createElement("input");
+        text.setAttribute("id", "text");
+        text.setAttribute("type", "text");
+
+        var button1 = document.createElement("button");
+        button1.setAttribute("onclick", "send(this, 0)");
+        button1.innerHTML = "send";
+        var button2 = document.createElement("button");
+        button2.setAttribute("onclick", "closeWebSocket()");
+        button2.innerHTML = "close";
+        if (role == "professor") {
+            button3 = document.createElement("button");
+            button3.setAttribute("onclick", "invite(this)");
+            button3.innerHTML = "invite";
+        }
+
+        var span = document.createElement("span");
+        span.setAttribute("id", "to");
+        if (user_id == null) {
+            span.innerHTML = privateChatObj;
+        } else {
+            span.innerHTML = user_id;
+        }
+        var span2 = document.createElement("span");
+        span2.setAttribute("id", "mode");
+        span2.innerHTML = "单聊"
+        var div = document.createElement("div");
+        div.setAttribute("id", "message");
+
+        body.appendChild(text);
+        body.appendChild(button1);
+        body.appendChild(button2);
+        if (button3 != null)
+            body.appendChild(button3);
+        body.appendChild(span);
+        body.appendChild(span2);
+        body.appendChild(div);
+    }
+
+    //邀请群聊
+    function invite(btn) {
+        var list = null;
+        var body = document.body;
+        var div = document.createElement("div");
+        var form = document.createElement("form");
+        form.setAttribute("name", "listForm");
+        $.ajax({
+            url: "/getProfessorList",
+            type: "POST",
+            data: {
+                "user_id": user_id,
+            },
+            async: false,
+            success: function (result) {
+                list = result;
+            }
+        });
+        div.setAttribute("id", "list");
+        //写成一行
+        $.each(list, function (i, t) {
+            var p = document.createElement("p");
+            var checkbox = document.createElement("input");
+            checkbox.setAttribute("type", "checkbox");
+            checkbox.setAttribute("value", t);
+            checkbox.setAttribute("name", "professor");
+            p.appendChild(checkbox);
+            p.appendChild(document.createTextNode(t));
+            form.appendChild(p);
+        });
+        var button1 = document.createElement("button");
+        button1.innerHTML = "confirm";
+        button1.onclick = function (ev) {
+            var txt = '';
+            var professors = document.listForm.professor;
+            for (var i = 0; i < professors.length; i++)
+                if (professors[i].checked)
+                    txt += professors[i].value + ";";
+            if (txt != '')
+                btn.parentNode.children[4].innerHTML = txt + user_id + ";" + btn.parentNode.children[4].innerHTML;
+            send(btn, 1);
+            cancel($("#list"));
+        }
+        var button2 = document.createElement("button");
+        button2.setAttribute("onclick", "cancel()");
+        button2.innerHTML = "cancel";
+        div.appendChild(form);
+        div.appendChild(button1);
+        div.appendChild(button2);
+        body.appendChild(div);
+        var bodyDiv = btn.parentNode;
+        exitGUI(bodyDiv);
+    }
+
+    function exitGUI(bodyDiv) {
+        var exitButton = document.createElement("button");
+        exitButton.setAttribute("onclick", "exit()");
+        exitButton.innerHTML = "exit";
+        exitButton.onclick = function (ev) {
+            var obj = {user_id: user_id, to: this.parentNode.attributes[0].value, mode: "3"}
+            websocket.send(JSON.stringify(obj));
+            cancel(this.parentNode);
+        }
+        bodyDiv.appendChild(exitButton);
+    }
+
+    //取消邀请框
+    function cancel(element) {
+        element.remove();
+    }
+
+    //发送消息
+    function send(button, mode) {
+        var obj = null;
+        var to = null;
+        var input = null;
+        var nowMode = null;
+        if (role == "common") {
+            to = document.getElementById('to').innerHTML;
+            input = document.getElementById('text');
+            nowMode = document.getElementById('mode').innerHTML;
+        } else if (role == "professor") {
+            to = button.parentNode.children[4].innerHTML;
+            input = button.parentNode.children[0];
+            nowMode = button.parentNode.children[5].innerHTML;
+        }
+        if (nowMode == "群聊")
+            mode = 2;
+        var message = input.value;
+        input.value = "";
+        obj = {message: message, role: role, user_id: user_id, name: name, to: to, mode: mode};
+        websocket.send(JSON.stringify(obj));
+    }
+</script>
+</html>

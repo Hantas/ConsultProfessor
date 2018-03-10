@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <title>登录</title>
+    <link href="css/style.css" rel="stylesheet" type="text/css" media="all"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="keywords" content="后台登录"/>
+</head>
+<body>
+<div class="login-form">
+    <div class="top-login">
+        <span><img src="images/group.png" alt=""/></span>
+    </div>
+    <h1>登录</h1>
+    <div class="login-top">
+        <form action="/" method="post" class="am-form login-form"
+              onSubmit="return LoginCheck()" name="loginForm">
+            <div class="login-ic">
+                <i></i>
+                <input type="text" id="name" name="name"/>
+                <div class="clear"></div>
+            </div>
+            <div class="login-ic">
+                <i class="icon"></i>
+                <input type="password" id="pwd" name="pwd"/>
+                <div class="clear"></div>
+            </div>
+
+            <div class="log-bwn" style="display: inline;">
+                <input type="submit" value="Login"/>
+            </div>
+            <div style="display: inline;float: left">
+                <a id="find" href="/findPasswordI" style="color: white; text-decoration: underline">忘记密码？</a>
+            </div>
+        </form>
+    </div>
+    <p class="copy">© 2018 ......</p>
+</div>
+</body>
+<script src="js/jquery.min.js"></script>
+<script>
+    function LoginCheck() {
+        if ($("#sid").val() === "" || $("#pwd").val() === "") {
+            $("#sid").val("");
+            $("#pwd").val("");
+            alert("用户名或密码不能为空!");
+            return false;
+        }
+        return true;
+    }
+</script>
+</html>
