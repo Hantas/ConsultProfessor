@@ -105,12 +105,22 @@
             }
         } else if (role == "common") {
             if (strArray[0] == "system") {
-                if (strArray[strArray.length - 1] == "cancel")
-                    data = data.substring(7, data.length - 7);
-                else
-                    data = data.substring(7, data.length - 8);
-                document.getElementById("to").innerHTML = data;
-                document.getElementById("mode").innerHTML = "群聊";
+                if (strArray[strArray.length - 1] == "disband") {
+                    document.getElementById("to").innerHTML = privateChatObj;
+                    document.getElementById("mode").innerHTML = "单聊";
+                    document.getElementById("exit").remove();
+                    setMessageInnerHTML("群聊已解散", null);
+                } else {
+                    if (strArray[strArray.length - 1] == "exit")
+                        data = data.substring(7, data.length - 5);
+                    else {
+                        data = data.substring(7, data.length - 8);
+                        exitGUI(document.body);
+                        setMessageInnerHTML("您已进入群聊", null);
+                    }
+                    document.getElementById("to").innerHTML = data;
+                    document.getElementById("mode").innerHTML = "群聊";
+                }
             } else if (strArray[0] == "personal") {
                 data = data.substring(9, data.length);
                 setMessageInnerHTML(data, null);
@@ -148,14 +158,12 @@
     function newChat(data, strArray) {
         var length = data.length;
         var strLength = strArray.length;
-        if (strArray[strLength - 1] == "rebuild") {
-            professorFace(strArray[strLength - 2]);
-            //chatSet.add(strArray[strLength - 2]);
-            exitGUI(document.getElementById(strArray[strLength - 2]));
-            document.getElementById(strArray[strLength - 2]).children[4].innerHTML = data.substring(7, length - 8);
-            document.getElementById(strArray[strLength - 2]).children[5].innerHTML = "群聊";
-        } else if (strArray[strLength - 1] == "change") {
-            document.getElementById(strArray[strLength - 2]).children[5].innerHTML = "群聊";
+        if (strArray[strLength - 1] == "rebuild" && document.getElementById(strArray[strLength - 2] + "group") == null) {
+            professorFace(strArray[strLength - 2] + "group");
+            //exitGUI(document.getElementById(strArray[strLength - 2]+ "group"));
+            document.getElementById(strArray[strLength - 2] + "group").children[4].innerHTML = data.substring(7, length - 8);
+            document.getElementById(strArray[strLength - 2] + "group").children[5].innerHTML = "群聊";
+            exitGUI(document.getElementById(strArray[strLength - 2] + "group"));
         } else if (strArray[strLength - 1] == "build") {
             var div = document.getElementById(strArray[strLength - 2]);
             if (div == null)
@@ -167,10 +175,8 @@
             var to = strArray[strArray.length - 1];
             setMessageInnerHTML(realData, to);
         }
-        else if (strArray[strLength - 1] == "cancel") {
-            alert(data + " " + strArray.length);
-            document.getElementById(strArray[strLength - 2]).children[4].innerHTML = data.substring(7, data.length - strArray[strArray.length - 1].length - 1);
-        }
+        else if (strArray[strLength - 1] == "exit")
+            document.getElementById(strArray[strLength - 2] + "group").children[4].innerHTML = data.substring(7, data.length - strArray[strArray.length - 1].length - 1);
     }
 
     //专家用户界面
@@ -193,7 +199,7 @@
         text.setAttribute("type", "text");
 
         var button1 = document.createElement("button");
-        button1.setAttribute("onclick", "send(this, 0)");
+        button1.setAttribute("onclick", "send(this)");
         button1.innerHTML = "send";
         var button2 = document.createElement("button");
         button2.setAttribute("onclick", "closeWebSocket()");
@@ -265,24 +271,26 @@
             for (var i = 0; i < professors.length; i++)
                 if (professors[i].checked)
                     txt += professors[i].value + ";";
-            if (txt != '')
-                btn.parentNode.children[4].innerHTML = txt + user_id + ";" + btn.parentNode.children[4].innerHTML;
-            send(btn, 1);
-            cancel($("#list"));
+            cancel(document.getElementById("list"));
+            var to = txt + user_id + ";" + btn.parentNode.children[4].innerHTML;
+            var data = "system;" + to + ";rebuild";
+            var strArray = data.split(";");
+            newChat(data, strArray);
+            var obj = {to: to, mode: "1"};
+            websocket.send(JSON.stringify(obj));
         }
         var button2 = document.createElement("button");
-        button2.setAttribute("onclick", "cancel()");
+        button2.setAttribute("onclick", "cancel(document.getElementById(\"list\"))");
         button2.innerHTML = "cancel";
         div.appendChild(form);
         div.appendChild(button1);
         div.appendChild(button2);
         body.appendChild(div);
-        var bodyDiv = btn.parentNode;
-        exitGUI(bodyDiv);
     }
 
     function exitGUI(bodyDiv) {
         var exitButton = document.createElement("button");
+        exitButton.setAttribute("id", "exit");
         exitButton.setAttribute("onclick", "exit()");
         exitButton.innerHTML = "exit";
         exitButton.onclick = function (ev) {
@@ -299,7 +307,7 @@
     }
 
     //发送消息
-    function send(button, mode) {
+    function send(button) {
         var obj = null;
         var to = null;
         var input = null;
@@ -313,11 +321,13 @@
             input = button.parentNode.children[0];
             nowMode = button.parentNode.children[5].innerHTML;
         }
-        if (nowMode == "群聊")
-            mode = 2;
+        if (nowMode == "单聊")
+            nowMode = "0";
+        else
+            nowMode = "2";
         var message = input.value;
         input.value = "";
-        obj = {message: message, role: role, user_id: user_id, name: name, to: to, mode: mode};
+        obj = {message: message, role: role, user_id: user_id, name: name, to: to, mode: nowMode};
         websocket.send(JSON.stringify(obj));
     }
 </script>
