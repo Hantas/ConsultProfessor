@@ -86,7 +86,7 @@ public class MyWebSocket {
     public void onMessage(String message, Session session) throws IOException {
         System.out.println(message);
         msgBean = JSON.parseObject(message, MsgBean.class);
-        sendMessage(msgBean.getMessage(), msgBean.getRole(), msgBean.getUser_id(), msgBean.getName(), msgBean.getTo(), msgBean.getMode());
+        sendMessage(msgBean.getMessage(), msgBean.getRole(), msgBean.getUser_id(), msgBean.getName(), msgBean.getTo(), msgBean.getMode(), msgBean.getTalk_id());
     }
 
     /**
@@ -101,7 +101,7 @@ public class MyWebSocket {
     /**
      * @param mode 0:服务器转发信息 1：发起建立群聊的信号 2：群聊 3:退出群聊
      */
-    private void sendMessage(String message, String role, String user_id, String name, String to, String mode) throws IOException {
+    private void sendMessage(String message, String role, String user_id, String name, String to, String mode, String talk_id) throws IOException {
         if (mode.equals("0")) {
             MyWebSocket item = WebSocketUtils.get(to);
             if (role.equals("common")) {
@@ -135,56 +135,73 @@ public class MyWebSocket {
             String[] list = to.split(";");
             chatMap.put(list[list.length - 1], to);
             for (int i = 0; i < list.length; i++) {
-                System.out.println(list[i]);
                 MyWebSocket account = WebSocketUtils.get(list[i]);
                 if (account != null) {
-                    if (i != list.length - 1 && !professorMap.get(list[i]).contains(list[list.length - 1]))
-                        professorMap.get(list[i]).add(list[list.length - 1]);
-                    account.getSession().getAsyncRemote().sendText("system;" + to + ";rebuild");
+                    if (i != list.length - 1) {
+                        if (!professorMap.containsKey(list[i]))
+                            professorMap.put(list[i], new ArrayList<>());
+                        if (!professorMap.get(list[i]).contains(talk_id))
+                            professorMap.get(list[i]).add(talk_id);
+                    }
+                    account.getSession().getAsyncRemote().sendText("system;" + talk_id + ";" + to + ";rebuild");
                 }
+                System.out.println(professorMap);
             }
+            System.out.println(chatMap);
         } else if (mode.equals("2")) {
             Date date = new Date();
             String[] list = to.split(";");
             for (int i = 0; i < list.length; i++) {
                 MyWebSocket account = WebSocketUtils.get(list[i]);
-                account.getSession().getAsyncRemote().sendText("groupChat;" + processing(name, message, date) + ";" + list[list.length - 1] + "group");
+                if (account != null)
+                    account.getSession().getAsyncRemote().sendText("groupChat;" + processing(name, message, date) + ";" + talk_id);
             }
         } else if (mode.equals("3")) {
-            to = to.substring(0, to.length() - 5);
-            professorMap.get(user_id).remove(to);
-            String chatersIdStr = chatMap.get(to);
-            String[] chatersId = chatersIdStr.split(";");
-            StringBuffer newChatersIdStr = new StringBuffer();
-            for (int i = 0; i < chatersId.length; i++) {
-                if (!chatersId[i].equals(user_id))
-                    newChatersIdStr.append(chatersId[i] + ";");
-            }
-            chatersId = newChatersIdStr.toString().split(";");
-            if (chatersId.length == 1 && chatersId[0].equals(to)) {
-                MyWebSocket account = WebSocketUtils.get(chatersId[0]);
-                if (account != null)
-                    account.getSession().getAsyncRemote().sendText("system;disband");
-                chatMap.remove(to);
-            } else {
-                chatMap.put(to, newChatersIdStr.toString());
-                for (int j = 0; j < chatersId.length; j++) {
-                    MyWebSocket account = WebSocketUtils.get(chatersId[j]);
+            if (role.equals("common")) {
+                String memberStr = chatMap.get(user_id);
+                String[] members = memberStr.split(";");
+                memberStr = memberStr.substring(0, memberStr.length() - members[members.length - 1].length() - 1);
+                for (int i = 0; i < members.length - 1; i++) {
+                    MyWebSocket account = WebSocketUtils.get(members[i]);
                     if (account != null)
-                        account.getSession().getAsyncRemote().sendText("system;" + newChatersIdStr.toString() + "exit");
+                        account.getSession().getAsyncRemote().sendText("system;客户已退出群聊;" + talk_id + ";" + memberStr + ";exit");
+                }
+                chatMap.remove(user_id);
+            } else {
+                String common = (talk_id.split("-"))[1];
+                String memberStr = chatMap.get(common);
+                String[] members = memberStr.split(";");
+                StringBuilder newMemberStr = new StringBuilder();
+                for (int i = 0; i < members.length; i++) {
+                    if (!members[i].equals(user_id))
+                        newMemberStr.append(members[i] + ";");
+                }
+                memberStr = newMemberStr.toString();
+                members = newMemberStr.toString().split(";");
+                if (members.length > 1) {
+                    chatMap.put(common, newMemberStr.toString());
+                    for (int i = 0; i < members.length; i++) {
+                        MyWebSocket account = WebSocketUtils.get(members[i]);
+                        if (account != null)
+                            account.getSession().getAsyncRemote().sendText("system;none;" + talk_id + ";" + memberStr + ";exit");
+                    }
+                }else {
+                    MyWebSocket account = WebSocketUtils.get(common);
+                    if (account != null){
+                        account.getSession().getAsyncRemote().sendText("system;disband");
+                    }
+                    chatMap.remove(common);
                 }
             }
+            System.out.println(chatMap);
         }
-        //this.session.getAsyncRemote().sendText(message);
     }
-
     /**
      * 聊天内容记录
      */
     private void record(String talker_id, String receiver_id, String message, Date time, boolean isHandle) {
         talkService.talkRecode(Long.valueOf(talker_id), Long.valueOf(receiver_id), message, time, isHandle);
     }
-
     /**
      * 聊天内容格式化
      */
@@ -198,21 +215,21 @@ public class MyWebSocket {
      * 服务器发送自定义消息
      */
     private void sendInfo() throws IOException {
-        if (chatMap.containsKey(msgBean.getUser_id())) {
-            String[] list = chatMap.get(msgBean.getUser_id()).split(";");
-            for (int i = 0; i < list.length - 1; i++) {
-                MyWebSocket account = WebSocketUtils.get(list[i]);
-                if (account != null)
-                    account.getSession().getAsyncRemote().sendText("groupChat;用户已经下线;" + msgBean.getUser_id() + "group");
-            }
-            //主动退出群聊或者群聊活跃度低时才算真正意义上的退出群聊
-            //chatMap.remove(msgBean.getUser_id());
-        } else {
-            MyWebSocket item = WebSocketUtils.get(msgBean.getTo());
-            System.out.println(item + " " + msgBean.getMode() + " " + isTalked);
-            if (item != null && msgBean.getMode().equals("0"))
-                item.getSession().getAsyncRemote().sendText("personal;用户已经下线;" + msgBean.getUser_id());
-        }
+//        if (chatMap.containsKey(msgBean.getUser_id())) {
+//            String[] list = chatMap.get(msgBean.getUser_id()).split(";");
+//            for (int i = 0; i < list.length - 1; i++) {
+//                MyWebSocket account = WebSocketUtils.get(list[i]);
+//                if (account != null)
+//                    account.getSession().getAsyncRemote().sendText("groupChat;用户已经下线;" + msgBean.getUser_id() + "group");
+//            }
+//            //主动退出群聊或者群聊活跃度低时才算真正意义上的退出群聊
+//            //chatMap.remove(msgBean.getUser_id());
+//        } else {
+//            MyWebSocket item = WebSocketUtils.get(msgBean.getTo());
+//            System.out.println(item + " " + msgBean.getMode() + " " + isTalked);
+//            if (item != null && msgBean.getMode().equals("0"))
+//                item.getSession().getAsyncRemote().sendText("personal;用户已经下线;" + msgBean.getUser_id());
+//        }
     }
 
     public static synchronized int getOnlineCount() {

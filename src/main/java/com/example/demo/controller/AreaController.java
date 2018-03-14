@@ -27,11 +27,11 @@ public class AreaController {
 
     public static int count = 0;
 
-    @GetMapping("/area")
-    public String recordArea() {
-        json(getJSON());
-        return "success";
-    }
+//    @GetMapping("/area")
+//    public String recordArea() {
+//        json(getJSON());
+//        return "success";
+//    }
 
     public String getJSON() {
         StringBuilder sb = new StringBuilder();

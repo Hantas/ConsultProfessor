@@ -4,12 +4,21 @@ package com.example.demo.entity;
  * Created by 10742 on 2018/2/9.
  */
 public class MsgBean {
+    private String talk_id;
     private String message;
     private String user_id;
     private String to;
     private String name;
     private String role;
     private String mode;
+
+    public String getTalk_id() {
+        return talk_id;
+    }
+
+    public void setTalk_id(String talk_id) {
+        this.talk_id = talk_id;
+    }
 
     public String getMessage() {
         return message;
