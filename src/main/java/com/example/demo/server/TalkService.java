@@ -14,8 +14,8 @@ public class TalkService {
     @Autowired
     private TalkMapper mapper;
 
-    public int talkRecode(Long talker_id, Long receiver_id, String content, Date time, boolean isHandle) {
-        return mapper.talkRecord(talker_id, receiver_id, content, time, isHandle);
+    public int talkRecode(Long talker_id, Long receiver_id, String content, Date time, boolean isHandle, String group_id) {
+        return mapper.talkRecord(talker_id, receiver_id, content, time, isHandle, group_id);
     }
 
     public List<Talk> leaveWord(Long talker_id, Long receiver_id) {
@@ -26,7 +26,7 @@ public class TalkService {
         return mapper.leaveWordSender(receiver_id);
     }
 
-    public void changeStatus(Long receiver_id){
+    public void changeStatus(Long receiver_id) {
         mapper.changeStatus(receiver_id);
     }
 }

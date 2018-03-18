@@ -12,10 +12,20 @@ public class Talk {
     private Long receiver_id;
     @JSONField(name = "content")
     private String content;
+    @JSONField(name = "group_id")
+    private String group_id;
     @JSONField(name = "time")
     private Date start_time;
     @JSONField(name = "isHandle")
     private boolean isHandle;
+
+    public String getGroup_id() {
+        return group_id;
+    }
+
+    public void setGroup_id(String group_id) {
+        this.group_id = group_id;
+    }
 
     public Long getT_id() {
         return t_id;

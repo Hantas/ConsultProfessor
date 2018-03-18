@@ -107,25 +107,25 @@ public class MyWebSocket {
             if (role.equals("common")) {
                 Date date = new Date();
                 if (item == null)
-                    record(user_id, to, message, date, false);
+                    record(user_id, to, message, date, false, null);
                 else if (!isTalked) {
                     isTalked = true;
-                    record(user_id, to, message, date, true);
+                    record(user_id, to, message, date, true, null);
                     item.getSession().getAsyncRemote().sendText("system;" + processing(name, message, date) + ";" + user_id + ";build");
                 } else {
-                    record(user_id, to, message, date, true);
+                    record(user_id, to, message, date, true, null);
                     item.getSession().getAsyncRemote().sendText("personal;" + processing(name, message, date) + ";" + user_id);
                 }
                 this.getSession().getAsyncRemote().sendText("personal;" + processing(name, message, date));
             } else {
                 Date date = new Date();
                 if (item == null)
-                    record(user_id, to, message, date, false);
+                    record(user_id, to, message, date, false, null);
                 else {
                     if (chatMap.containsKey(to))
                         this.getSession().getAsyncRemote().sendText("personal;用户正在群聊中;" + to);
                     else {
-                        record(user_id, to, message, date, true);
+                        record(user_id, to, message, date, true, null);
                         item.getSession().getAsyncRemote().sendText("personal;" + processing(name, message, date));
                         this.getSession().getAsyncRemote().sendText("personal;" + processing(name, message, date) + ";" + to);
                     }
@@ -145,8 +145,8 @@ public class MyWebSocket {
                     }
                     account.getSession().getAsyncRemote().sendText("system;" + talk_id + ";" + to + ";rebuild");
                 }
-                System.out.println(professorMap);
             }
+            System.out.println(professorMap);
             System.out.println(chatMap);
         } else if (mode.equals("2")) {
             Date date = new Date();
@@ -156,6 +156,7 @@ public class MyWebSocket {
                 if (account != null)
                     account.getSession().getAsyncRemote().sendText("groupChat;" + processing(name, message, date) + ";" + talk_id);
             }
+            record(user_id, to, message, date, true, talk_id);
         } else if (mode.equals("3")) {
             if (role.equals("common")) {
                 String memberStr = chatMap.get(user_id);
@@ -169,39 +170,51 @@ public class MyWebSocket {
                 chatMap.remove(user_id);
             } else {
                 String common = (talk_id.split("-"))[1];
-                String memberStr = chatMap.get(common);
-                String[] members = memberStr.split(";");
+                String[] members;
+                if (chatMap.containsKey(common)) {
+                    String memberStr = chatMap.get(common);
+                    members = memberStr.split(";");
+                } else {
+                    members = to.split(";");
+                }
                 StringBuilder newMemberStr = new StringBuilder();
                 for (int i = 0; i < members.length; i++) {
                     if (!members[i].equals(user_id))
                         newMemberStr.append(members[i] + ";");
                 }
-                memberStr = newMemberStr.toString();
+                professorMap.remove(user_id);
                 members = newMemberStr.toString().split(";");
                 if (members.length > 1) {
                     chatMap.put(common, newMemberStr.toString());
                     for (int i = 0; i < members.length; i++) {
                         MyWebSocket account = WebSocketUtils.get(members[i]);
                         if (account != null)
-                            account.getSession().getAsyncRemote().sendText("system;none;" + talk_id + ";" + memberStr + ";exit");
+                            account.getSession().getAsyncRemote().sendText("system;none;" + talk_id + ";" + newMemberStr.toString() + ";exit");
                     }
-                }else {
-                    MyWebSocket account = WebSocketUtils.get(common);
-                    if (account != null){
-                        account.getSession().getAsyncRemote().sendText("system;disband");
+                } else {
+                    MyWebSocket account = WebSocketUtils.get(members[0]);
+                    if (account != null) {
+                        account.getSession().getAsyncRemote().sendText("system;" + talk_id + ";disband");
                     }
-                    chatMap.remove(common);
+                    if (chatMap.containsKey(common)) {
+                        chatMap.remove(common);
+                    } else {
+                        professorMap.remove(members[0]);
+                    }
                 }
             }
+            System.out.println(professorMap);
             System.out.println(chatMap);
         }
     }
+
     /**
      * 聊天内容记录
      */
-    private void record(String talker_id, String receiver_id, String message, Date time, boolean isHandle) {
-        talkService.talkRecode(Long.valueOf(talker_id), Long.valueOf(receiver_id), message, time, isHandle);
+    private void record(String talker_id, String receiver_id, String message, Date time, boolean isHandle, String group_id) {
+        talkService.talkRecode(Long.valueOf(talker_id), Long.valueOf(receiver_id), message, time, isHandle, group_id);
     }
+
     /**
      * 聊天内容格式化
      */

@@ -14,21 +14,10 @@
     var i = 0;
 
     function add() {
-        var div = document.getElementById("message");
-        var textarea = document.createElement("textarea");
-        textarea.setAttribute("id", i);
-        textarea.innerText = i;
-        i = i + 1;
-        var button1 = document.createElement("button");
-        button1.setAttribute("onclick", "send(this)");
-        button1.setAttribute("class", "send");
-        button1.innerHTML = "send";
-        textarea.appendChild(button1);
-        div.appendChild(textarea);
+        var obj = {a:"a",b:"b"};
+        obj[c] = "c";
+        alert(JSON.stringify(obj));
     }
 
-    function send(obj) {
-        alert(obj.parentNode.getAttribute("id"));
-    }
 </script>
 </html>

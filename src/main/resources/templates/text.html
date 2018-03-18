@@ -60,7 +60,6 @@
 
 <script type="text/javascript" th:inline="javascript">
     var websocket = null;
-    var chatSet = new Set();
     var user_id = [[${account.user_id}]];
     var name = [[${account.name}]];
     var role = [[${account.role}]];
@@ -79,9 +78,11 @@
             }
         });
     }
+
     //判断当前浏览器是否支持WebSocket
     if ('WebSocket' in window) {
         websocket = new WebSocket("ws://localhost:8080/websocket/" + user_id);
+        //websocket = new WebSocket("ws://localhost:8080/websocket/" + user_id);
     }
     else {
         alert('Not support websocket')
@@ -112,6 +113,7 @@
         } else if (role == "common") {
             if (strArray[0] == "system") {
                 if (strArray[strArray.length - 1] == "disband") {
+                    document.getElementById("to").parentNode.attributes[0].value = privateChatObj;
                     document.getElementById("to").innerHTML = privateChatObj;
                     document.getElementById("mode").innerHTML = "单聊";
                     document.getElementById("exit").remove();
@@ -161,7 +163,7 @@
         websocket.close();
     }
 
-    //专家收到消息出现弹框
+    //专家收到消息界面变化
     function newChat(data, strArray) {
         var length = data.length;
         var strLength = strArray.length;
@@ -179,67 +181,15 @@
             var realData = data.substring(0, data.length - strArray[strArray.length - 1].length - 1);
             var to = strArray[strArray.length - 1];
             setMessageInnerHTML(realData, to);
-        }
-        else if (strArray[strLength - 1] == "exit"){
+        } else if (strArray[strLength - 1] == "exit"){
             realData = data.substring(strArray[0].length + strArray[1].length + strArray[2].length + 3, data.length - strArray[strArray.length - 1].length - 1);
             document.getElementById(strArray[2]).children[4].innerHTML = realData;
             if (strArray[1] != "none")
                 setMessageInnerHTML(strArray[1], strArray[2]);
+        }else if (strArray[strLength - 1] == "disband"){
+            var div = document.getElementById(strArray[strLength - 2]);
+            div.remove();
         }
-    }
-
-    //专家用户界面
-    function professorFace(user_id) {
-        var body = document.body;
-        var div = document.createElement("div");
-        div.setAttribute("id", user_id);
-        div.style.backgroundColor = "red";
-        body.appendChild(div);
-        clientFace(div, user_id);
-    }
-
-    //非专家用户界面
-    function clientFace(body, user_id) {
-
-        var button3 = null;
-
-        var text = document.createElement("input");
-        text.setAttribute("id", "text");
-        text.setAttribute("type", "text");
-
-        var button1 = document.createElement("button");
-        button1.setAttribute("onclick", "send(this)");
-        button1.innerHTML = "send";
-        var button2 = document.createElement("button");
-        button2.setAttribute("onclick", "closeWebSocket()");
-        button2.innerHTML = "close";
-        if (role == "professor") {
-            button3 = document.createElement("button");
-            button3.setAttribute("onclick", "invite(this)");
-            button3.innerHTML = "invite";
-        }
-
-        var span = document.createElement("span");
-        span.setAttribute("id", "to");
-        if (user_id == null) {
-            span.innerHTML = privateChatObj;
-        } else {
-            span.innerHTML = user_id;
-        }
-        var span2 = document.createElement("span");
-        span2.setAttribute("id", "mode");
-        span2.innerHTML = "单聊"
-        var div = document.createElement("div");
-        div.setAttribute("id", "message");
-
-        body.appendChild(text);
-        body.appendChild(button1);
-        body.appendChild(button2);
-        if (button3 != null)
-            body.appendChild(button3);
-        body.appendChild(span);
-        body.appendChild(span2);
-        body.appendChild(div);
     }
 
 </script>
