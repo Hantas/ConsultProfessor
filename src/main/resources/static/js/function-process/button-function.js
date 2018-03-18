@@ -58,15 +58,12 @@ function exitGUI(bodyDiv) {
     exitButton.setAttribute("onclick", "exit()");
     exitButton.innerHTML = "exit";
     exitButton.onclick = function (ev) {
-        var to = null;
         var obj = null;
+        obj = {user_id: user_id, role: role, talk_id: this.parentNode.attributes[0].value, mode: "3"};
         if (role == "professor") {
-            to = this.parentNode.children[4].innerHTML;
-            obj = {user_id: user_id, role: role, to: to, talk_id: this.parentNode.attributes[0].value, mode: "3"};
             cancel(this.parentNode);
         }
         else {
-            obj = {user_id: user_id, role: role, to: to, talk_id: this.parentNode.attributes[0].value, mode: "3"};
             this.parentNode.attributes[0].value = privateChatObj;
             document.getElementById("to").innerHTML = privateChatObj;
             document.getElementById("mode").innerHTML = "单聊";

@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.Talk;
 import com.example.demo.server.AccountService;
+import com.example.demo.server.MyWebSocket;
 import com.example.demo.server.TalkService;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,14 @@ public class TalkController {
             talkService.changeStatus(Long.valueOf(receiver_id));
             return wordList;
         }
+        return null;
+    }
+
+    @PostMapping("/getGroup")
+    public String getGroup(String user_id){
+//        if (MyWebSocket.getChatMap().containsKey(user_id)){
+//            String group_id = MyWebSocket.getChatMap().get(user_id)
+//        }
         return null;
     }
 

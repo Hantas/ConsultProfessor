@@ -5,6 +5,7 @@
     <script type="text/javascript" src="js/jquery.min.js"></script>
     <script type="text/javascript" src="js/function-process/date-format.js"></script>
     <script type="text/javascript" src="js/function-process/button-function.js"></script>
+    <script type="text/javascript" src="js/function-process/role-face.js"></script>
 </head>
 <script type="text/javascript" th:inline="javascript">
     <!---->
@@ -182,12 +183,12 @@
             var realData = data.substring(0, data.length - strArray[strArray.length - 1].length - 1);
             var to = strArray[strArray.length - 1];
             setMessageInnerHTML(realData, to);
-        } else if (strArray[strLength - 1] == "exit"){
+        } else if (strArray[strLength - 1] == "exit") {
             realData = data.substring(strArray[0].length + strArray[1].length + strArray[2].length + 3, data.length - strArray[strArray.length - 1].length - 1);
             document.getElementById(strArray[2]).children[4].innerHTML = realData;
             if (strArray[1] != "none")
                 setMessageInnerHTML(strArray[1], strArray[2]);
-        }else if (strArray[strLength - 1] == "disband"){
+        } else if (strArray[strLength - 1] == "disband") {
             var div = document.getElementById(strArray[strLength - 2]);
             div.remove();
         }
