@@ -1,6 +1,6 @@
 package com.example.demo.config;
 
-import com.example.demo.server.TalkService;
+import com.example.demo.server.DynamicTask;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -16,6 +16,5 @@ public class WebSocketConfig {
     public ServerEndpointExporter serverEndpointExporter() {
         return new ServerEndpointExporter();
     }
-    @Bean
-    public TalkService talkService(){return new TalkService();}
+
 }

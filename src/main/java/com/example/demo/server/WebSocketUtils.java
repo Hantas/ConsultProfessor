@@ -9,6 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WebSocketUtils {
     private static Map<String, MyWebSocket> map = new ConcurrentHashMap<String, MyWebSocket>();
 
+    public static Map<String, MyWebSocket> getMap(){
+        return map;
+    }
+
     public static void put(String user_id, MyWebSocket session) {
         map.put(getKey(user_id), session);
     }
@@ -17,15 +21,6 @@ public class WebSocketUtils {
         return map.get(getKey(user_id));
 
     }
-
-//    public static List<MyWebSocket> getOtherSession(String user_id) {
-//        List<MyWebSocket> result = new ArrayList<MyWebSocket>();
-//        Set<Map.Entry<String, MyWebSocket>> set = map.entrySet();
-//        for (Map.Entry<String, MyWebSocket> s : set) {
-//            result.add(s.getValue());
-//        }
-//        return result;
-//    }
 
     public static void remove(String user_id) {
         map.remove(getKey(user_id));

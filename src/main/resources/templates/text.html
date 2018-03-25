@@ -18,11 +18,37 @@
         body.appendChild(span);
         body.appendChild(br);
         if (role == "common") {
+            var group_id = null;
+            var object = null;
+            $.ajax({
+                url: "/getGroup",
+                type: "POST",
+                data: {
+                    "user_id": user_id,
+                },
+                async: false,
+                success: function (result) {
+                    if (result != "") {
+                        var datas = result.split("&");
+                        group_id = datas[0];
+                        object = datas[1];
+                    }
+                }
+            });
             var div = document.createElement("div");
-            div.setAttribute("id", privateChatObj);
+            if (group_id != null) {
+                div.setAttribute("id", group_id);
+            } else {
+                div.setAttribute("id", privateChatObj);
+            }
             body = document.body;
             clientFace(div, null);
             body.appendChild(div);
+            if (group_id != null) {
+                document.getElementById("to").innerHTML = object;
+                document.getElementById("mode").innerHTML = "群聊";
+                exitGUI(div);
+            }
         } else if (role == "professor") {
             $.ajax({
                 url: "/getLeaveWord",
@@ -91,7 +117,7 @@
     }
     //连接发生错误的回调方法
     websocket.onerror = function () {
-        alert("断网了");
+
     };
     //连接成功建立的回调方法
     websocket.onopen = function (event) {

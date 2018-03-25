@@ -48,10 +48,14 @@ public class TalkController {
     }
 
     @PostMapping("/getGroup")
+    @ResponseBody
     public String getGroup(String user_id){
-//        if (MyWebSocket.getChatMap().containsKey(user_id)){
-//            String group_id = MyWebSocket.getChatMap().get(user_id)
-//        }
+        if (MyWebSocket.getAccountMap().containsKey(user_id)){
+            List<String> list = new ArrayList<>(MyWebSocket.getAccountMap().get(user_id));
+            String group_id = list.get(0);
+            String to = MyWebSocket.getChatMap().get(group_id);
+            return group_id + "&" + to;
+        }
         return null;
     }
 
