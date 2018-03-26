@@ -1,21 +1,15 @@
 package com.example.demo.server;
 
+import com.alibaba.fastjson.JSON;
+import com.example.demo.entity.ResponseBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 
 @Service
@@ -40,7 +34,7 @@ public class DynamicTask {
         System.out.println("new " + new Date());
         Runnable runnable = new MyRunnable();
         Trigger trigger = new PeriodicTrigger(0);
-        ((PeriodicTrigger) trigger).setInitialDelay(10000);
+        ((PeriodicTrigger) trigger).setInitialDelay(43200000);
         future = threadPoolTaskScheduler.schedule(runnable, trigger);
         return "startCron";
     }
@@ -55,19 +49,18 @@ public class DynamicTask {
         @Override
         public void run() {
             System.out.println("talk stop " + new Date());
-            Map<String, String> chatMap = MyWebSocket.getChatMap();
+            Map<String, List<String>> chatMap = MyWebSocket.getChatMap();
             Map<String, Set<String>> accountMap = MyWebSocket.getAccountMap();
             Map<String, MyWebSocket> socketMap = WebSocketUtils.getMap();
-            String memberStr = chatMap.get(talk_id);
-            String[] members = memberStr.split(";");
-            for (int i = 0; i < members.length; i++) {
-                MyWebSocket socket = socketMap.get(members[i]);
+            List<String> members = new ArrayList<>(chatMap.get(talk_id));
+            for (int i = 0; i < members.size(); i++) {
+                MyWebSocket socket = socketMap.get(members.get(i));
                 if (socket != null) {
-                    socket.getSession().getAsyncRemote().sendText("system;" + talk_id + ";disband");
+                    socket.getSession().getAsyncRemote().sendText(JSON.toJSONString(new ResponseBean(null, "disband", talk_id)));
                 }
-                accountMap.get(members[i]).remove(talk_id);
-                if (accountMap.get(members[i]).size() == 0)
-                    accountMap.remove(members[i]);
+                accountMap.get(members.get(i)).remove(talk_id);
+                if (accountMap.get(members.get(i)).size() == 0)
+                    accountMap.remove(members.get(i));
             }
             chatMap.remove(talk_id);
             System.out.println(accountMap + " " + chatMap);

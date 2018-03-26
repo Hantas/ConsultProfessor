@@ -1,6 +1,7 @@
 //邀请群聊
 function invite(btn) {
     var list = null;
+    var memberArray = new Array();
     var body = document.body;
     var div = document.createElement("div");
     var form = document.createElement("form");
@@ -31,15 +32,15 @@ function invite(btn) {
     var button1 = document.createElement("button");
     button1.innerHTML = "confirm";
     button1.onclick = function (ev) {
-        var txt = '';
         var professors = document.listForm.professor;
+        memberArray.push(btn.parentNode.children[4].innerHTML);
+        memberArray.push(user_id.toString());
         for (var i = 0; i < professors.length; i++)
             if (professors[i].checked)
-                txt += professors[i].value + ";";
+                memberArray.push(professors[i].value);
         cancel(document.getElementById("list"));
-        var to = txt + user_id + ";" + btn.parentNode.children[4].innerHTML;
         var talk_id = new Date().format("yyyyMMddhhmmss") + "-" + btn.parentNode.children[4].innerHTML;
-        var obj = {to: to, mode: "1", talk_id: talk_id};
+        var obj = {to: memberArray, mode: "1", talk_id: talk_id};
         websocket.send(JSON.stringify(obj));
     }
     var button2 = document.createElement("button");
@@ -67,7 +68,7 @@ function exitGUI(bodyDiv) {
             this.parentNode.attributes[0].value = privateChatObj;
             document.getElementById("to").innerHTML = privateChatObj;
             document.getElementById("mode").innerHTML = "单聊";
-            setMessageInnerHTML("您已退出群聊");
+            setMessageInnerHTML("您已退出群聊",null);
             cancel(this);
         }
         websocket.send(JSON.stringify(obj));
@@ -83,16 +84,16 @@ function cancel(element) {
 //发送消息
 function send(button) {
     var obj = null;
-    var to = null;
+    var to = new Array();
     var input = null;
     var nowMode = null;
     var talk_id = null;
     if (role == "common") {
-        to = document.getElementById('to').innerHTML;
+        to.push(document.getElementById('to').innerHTML);
         input = document.getElementById('text');
         nowMode = document.getElementById('mode').innerHTML;
     } else if (role == "professor") {
-        to = button.parentNode.children[4].innerHTML;
+        to.push(button.parentNode.children[4].innerHTML);
         input = button.parentNode.children[0];
         nowMode = button.parentNode.children[5].innerHTML;
     }

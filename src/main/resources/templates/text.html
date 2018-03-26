@@ -19,7 +19,6 @@
         body.appendChild(br);
         if (role == "common") {
             var group_id = null;
-            var object = null;
             $.ajax({
                 url: "/getGroup",
                 type: "POST",
@@ -29,9 +28,7 @@
                 async: false,
                 success: function (result) {
                     if (result != "") {
-                        var datas = result.split("&");
-                        group_id = datas[0];
-                        object = datas[1];
+                        group_id = result;
                     }
                 }
             });
@@ -45,7 +42,6 @@
             clientFace(div, null);
             body.appendChild(div);
             if (group_id != null) {
-                document.getElementById("to").innerHTML = object;
                 document.getElementById("mode").innerHTML = "群聊";
                 exitGUI(div);
             }
@@ -117,55 +113,30 @@
     }
     //连接发生错误的回调方法
     websocket.onerror = function () {
-
     };
     //连接成功建立的回调方法
     websocket.onopen = function (event) {
-        //setMessageInnerHTML("open");
-        // if (signal != null)
-        //     websocket.send(JSON.stringify(signal));
     }
     //接收到消息的回调方法
     websocket.onmessage = function (event) {
-        var data = event.data;
-        var strArray = data.split(';');
+        var data = JSON.parse(event.data);
         if (role == "professor") {
-            if (strArray[0] == "system") {
-                newChat(data, strArray);
-            }
-            else {
-                var realData = data.substring(strArray[0].length + 1, data.length - strArray[strArray.length - 1].length - 1);
-                var to = strArray[strArray.length - 1];
-                setMessageInnerHTML(realData, to);
-            }
+            newChat(data);
         } else if (role == "common") {
-            if (strArray[0] == "system") {
-                if (strArray[strArray.length - 1] == "disband") {
-                    document.getElementById("to").parentNode.attributes[0].value = privateChatObj;
-                    document.getElementById("to").innerHTML = privateChatObj;
-                    document.getElementById("mode").innerHTML = "单聊";
-                    document.getElementById("exit").remove();
-                    setMessageInnerHTML("群聊已解散", null);
-                } else {
-                    if (strArray[strArray.length - 1] == "exit")
-                        data = data.substring(strArray[0].length + strArray[1].length + strArray[2].length + 3, data.length - strArray[strArray.length - 1].length - 1);
-                    else {
-                        data = data.substring(8 + strArray[1].length, data.length - 8);
-                        document.getElementById(privateChatObj).setAttribute("id", strArray[1]);
-                        exitGUI(document.getElementById(strArray[1]));
-                        setMessageInnerHTML("您已进入群聊", null);
-                    }
-                    document.getElementById("to").innerHTML = data;
-                    document.getElementById("mode").innerHTML = "群聊";
-                }
-            } else if (strArray[0] == "personal") {
-                data = data.substring(9, data.length);
-                setMessageInnerHTML(data, null);
-            }
-            else if (strArray[0] == "groupChat") {
-                data = data.substring(10, data.length - strArray[strArray.length - 1].length - 1);
-                setMessageInnerHTML(data, null);
-            }
+            if (data.order == "fresh") {
+                document.getElementById(privateChatObj).setAttribute("id", data.keyRole_id);
+                exitGUI(document.getElementById(data.keyRole_id));
+                setMessageInnerHTML("您已进入群聊", null);
+                document.getElementById("to").innerHTML = data.message;
+                document.getElementById("mode").innerHTML = "群聊";
+            } else if (data.order == "disband") {
+                document.getElementById("to").parentNode.attributes[0].value = privateChatObj;
+                document.getElementById("to").innerHTML = privateChatObj;
+                document.getElementById("mode").innerHTML = "单聊";
+                document.getElementById("exit").remove();
+                setMessageInnerHTML("群聊已解散", null);
+            } else
+                setMessageInnerHTML(data.message, data.keyRole_id);
         }
     }
     //连接关闭的回调方法
@@ -192,31 +163,22 @@
     }
 
     //专家收到消息界面变化
-    function newChat(data, strArray) {
-        var length = data.length;
-        var strLength = strArray.length;
-        if (strArray[strLength - 1] == "rebuild" && document.getElementById(strArray[1]) == null) {
-            professorFace(strArray[1]);
-            document.getElementById(strArray[1]).children[4].innerHTML = data.substring(8 + strArray[1].length, length - 8);
-            document.getElementById(strArray[1]).children[5].innerHTML = "群聊";
-            exitGUI(document.getElementById(strArray[1]));
-        } else if (strArray[strLength - 1] == "build") {
-            var div = document.getElementById(strArray[strLength - 2]);
-            if (div == null)
-                professorFace(strArray[strLength - 2]);
-            data = data.substring(7, length - 6);
-            strArray = data.split(';');
-            var realData = data.substring(0, data.length - strArray[strArray.length - 1].length - 1);
-            var to = strArray[strArray.length - 1];
-            setMessageInnerHTML(realData, to);
-        } else if (strArray[strLength - 1] == "exit") {
-            realData = data.substring(strArray[0].length + strArray[1].length + strArray[2].length + 3, data.length - strArray[strArray.length - 1].length - 1);
-            document.getElementById(strArray[2]).children[4].innerHTML = realData;
-            if (strArray[1] != "none")
-                setMessageInnerHTML(strArray[1], strArray[2]);
-        } else if (strArray[strLength - 1] == "disband") {
-            var div = document.getElementById(strArray[strLength - 2]);
+    function newChat(data) {
+        if (data.order == "fresh" && document.getElementById(data.keyRole_id) == null) {
+            professorFace(data.keyRole_id);
+            document.getElementById(data.keyRole_id).children[4].innerHTML = "???";
+            document.getElementById(data.keyRole_id).children[5].innerHTML = "群聊";
+            exitGUI(document.getElementById(data.keyRole_id));
+        } else if (data.order == "disband") {
+            var div = document.getElementById(data.keyRole_id);
             div.remove();
+        } else {
+            if (data.order == "build") {
+                var div = document.getElementById(data.keyRole_id);
+                if (div == null)
+                    professorFace(data.keyRole_id);
+            }
+            setMessageInnerHTML(data.message, data.keyRole_id);
         }
     }
 

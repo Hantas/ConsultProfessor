@@ -1,5 +1,8 @@
 package com.example.demo.controller;
 
+import com.alibaba.fastjson.JSON;
+import com.example.demo.entity.MsgBean;
+import com.example.demo.entity.ResponseBean;
 import com.example.demo.entity.Talk;
 import com.example.demo.server.AccountService;
 import com.example.demo.server.MyWebSocket;
@@ -31,15 +34,11 @@ public class TalkController {
         if (talker_ids != null){
             List<String> wordList = new ArrayList<>();
             for (Long talker_id : talker_ids){
-                StringBuffer words = new StringBuffer();
                 List<Talk> talks = talkService.leaveWord(Long.valueOf(talker_id), Long.valueOf(receiver_id));
                 String name = accountService.getName(talker_id);
-                words.append("system;");
                 for (Talk talk: talks){
-                    words.append(processing(name, talk.getContent(), talk.getStart_time()));
+                    String meta = JSON.toJSONString(new ResponseBean(processing(name, talk.getContent(), talk.getStart_time()), "build", talker_id.toString()));
                 }
-                words.append(";" + talker_id + ";build");
-                wordList.add(words.toString());
             }
             talkService.changeStatus(Long.valueOf(receiver_id));
             return wordList;
@@ -51,10 +50,8 @@ public class TalkController {
     @ResponseBody
     public String getGroup(String user_id){
         if (MyWebSocket.getAccountMap().containsKey(user_id)){
-            List<String> list = new ArrayList<>(MyWebSocket.getAccountMap().get(user_id));
-            String group_id = list.get(0);
-            String to = MyWebSocket.getChatMap().get(group_id);
-            return group_id + "&" + to;
+            String group_id = new ArrayList<>(MyWebSocket.getAccountMap().get(user_id)).get(0);
+            return group_id;
         }
         return null;
     }
