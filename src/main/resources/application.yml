@@ -9,3 +9,6 @@ spring:
     cache: false
     content-type: text/html
     mode: LEGACYHTML5
+
+server:
+  port: 7383
